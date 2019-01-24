@@ -1,0 +1,410 @@
+---
+title: "Differential expression and gene set enrichment analysis"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = 'center', fig.height = 5)
+```
+
+# Setup
+
+```{r warning=FALSE, message=FALSE}
+library(readxl)
+library(stringr)
+library(data.table)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(ggplot2)
+library(ggbiplot)
+library(ggrepel)
+library(ggridges)
+library(ggpubr)
+library(gridExtra)
+library(genefilter)
+library(enrichplot)
+library(ggraph)
+library(igraph)
+library(tidygraph)
+library(pathview)
+library(gage)
+library(AnnotationDbi)
+library(biomaRt)
+```
+
+```{r}
+theme_set(theme_pubr(border=TRUE))
+```
+
+# Read data
+
+```{r}
+input <- file.path("data","GF vs. SPF Gene Expression Analysis.xlsx")
+data <- read_excel(input, sheet = 1)
+setDT(data)
+head(data)
+```
+
+Remove genes w/o counts (also tried removing genes with a few counts, e.g. 5, the results are not different from this).
+
+```{r}
+count_cols <- grep("count",names(data),value=TRUE)
+filtrows <- data[,rowSums(.SD),.SDcols=count_cols]==0
+data <- data[!filtrows]
+```
+
+Get raw counts in `DESeqDataSet`.
+
+```{r}
+count_cols <- grep("count",names(data),value=TRUE)
+count_data <- as.data.frame(data[,..count_cols])
+rownames(count_data) <- data$Identifier
+colnames(count_data) <- stringr::str_extract(count_cols,"(GF|SPF)\\d")
+col_data <- data.frame(
+  strain=factor(c(rep("GF",3),rep("SPF",3)), levels=c("SPF","GF")),
+  sample=factor(colnames(count_data),levels=c("SPF1","SPF2","SPF3","GF1","GF2","GF3"))
+)
+dds <- DESeqDataSetFromMatrix(
+  countData = count_data,
+  colData = col_data,
+  design = ~ strain
+)
+dds
+```
+
+# Exploratory data analysis
+
+## Samples comparison
+
+```{r}
+sampleDists <- dist(t(assay(dds)))
+sampleDistMatrix <- as.matrix(sampleDists)
+colors <- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+phs <- pheatmap(
+  sampleDistMatrix,
+  clustering_distance_rows = sampleDists,
+  clustering_distance_cols = sampleDists,
+  col=colors, 
+  main = "Samples distance heatmap\n(based on raw counts)"
+)
+```
+
+## Variance normalization
+
+```{r include=FALSE}
+vsd <- vst(assay(dds))
+pcavsd <- prcomp(t(vsd), scale=TRUE)
+df <- data.frame(t(vsd))
+df$col <- c(rep("GF",3),rep("SPF",3))
+df$sample <- rownames(df)
+pcas <- data.table(scale(pcavsd$x[,1:2]), keep.rownames="sample")
+pcav <- ggbiplot::ggbiplot(pcavsd, groups=factor(df$col), var.axes=FALSE) +
+  geom_label_repel(data=pcas, mapping=aes(x=PC1, y=PC2, label=sample)) + 
+  guides(colour=FALSE)
+pcavscree <- ggbiplot::ggscreeplot(pcavsd) + labs(title="", x="PC")
+grid.arrange(
+  pcav, pcavscree, 
+  ncol=2, widths=2:1, top="Samples PCA following variance normalization (VST)"
+)
+```
+
+```{r}
+rds <- rlog(assay(dds))
+pcards <- prcomp(t(rds), scale=TRUE)
+df <- data.frame(t(rds))
+df$col <- c(rep("GF",3),rep("SPF",3))
+df$sample <- rownames(df)
+pcas <- data.table(scale(pcards$x[,1:2]), keep.rownames="sample")
+pcar <- ggbiplot::ggbiplot(pcards, groups=factor(df$col), var.axes=FALSE) +
+  geom_label_repel(data=pcas, mapping=aes(x=PC1, y=PC2, label=sample)) + 
+  guides(colour=FALSE)
+pcarscree <- ggbiplot::ggscreeplot(pcards) + labs(title="", x="PC")
+grid.arrange(
+  pcar, pcarscree, 
+  ncol=2, widths=2:1, top="Samples PCA following variance normalization (rlog)"
+)
+```
+
+## Clustering
+
+Clustering by genes with most variable counts after normalization.  
+
+First, mapping entrez ids to gene names.
+
+```{r}
+require(biomaRt)
+mart <- useDataset("mmusculus_gene_ensembl", useMart("ensembl"))
+genes <- getBM(
+  attributes=c("ensembl_gene_id","external_gene_name","description"),
+  filters="ensembl_gene_id",
+  values=rownames(dds),
+  mart=mart
+)
+```
+```{r}
+setDT(genes)
+genenames <- cbind.data.frame(ensembl_gene_id=rownames(dds))
+setDT(genenames)[genes,on='ensembl_gene_id',external_gene_name:=i.description]
+```
+
+Top 100 most variable genes on a heatmap.  
+
+```{r fig.height=8, fig.width=4, fig.keep='all'}
+require(genefilter)
+heatmap_function <- function(rds,include=1:ncol(rds)) {
+  topVarGenes <- head(order(rowVars(rds[,include]), decreasing = TRUE), 100)
+  mat <- rds[topVarGenes,include]
+  mat <- mat - rowMeans(mat)
+  rownames(mat) <- stringr::str_extract(genenames$external_gene_name, "[^,\\[\\(]+")[topVarGenes]
+  phg <- pheatmap(mat,treeheight_col=0,treeheight_row=0,show_rownames=FALSE)
+}
+
+heatmap_function(rds)
+#heatmap_function(rds,1:5)
+#heatmap_function(rds,c(1,2,4,5))
+```
+
+
+# DESeq2
+
+Without SPF3.
+
+```{r}
+excols <- match(c("SPF3"),colnames(dds))
+dds <- dds[,-excols]
+dds <- DESeq(dds)
+res <- results(dds)
+```
+
+## Compare DESeq2 and input LFC  
+
+```{r fig.height=8}
+all.equal(data$Identifier, rownames(res)) # sanity check
+compadt <- data.table(
+  gene=data$Name,
+  input_lfc=data$`GF vs. SPF           Log fold change`,
+  input_pval=data$`GF vs. SPF         P-value`,
+  input_fdr=data$`GF vs. SPF FDR p-value`,
+  DESeq2_lfc=res$log2FoldChange,
+  DESeq2_lfcSE=res$lfcSE,
+  DESeq2_pval=res$pvalue, 
+  DESeq2_padj=res$padj
+)
+outliers <- compadt[abs(input_lfc)>10 | abs(DESeq2_lfc)>10]
+ggplot(compadt[!(is.na(input_lfc)|is.na(DESeq2_lfc)|is.na(DESeq2_lfcSE))], aes(input_lfc, DESeq2_lfc)) + 
+  geom_point(aes(colour=DESeq2_lfcSE), alpha=0.5) + 
+  geom_abline(slope=1,intercept=0) +
+  geom_label_repel(data=outliers, aes(label=gene))
+data[Name %in% outliers$gene]
+```
+
+## MA plots
+
+```{r}
+plotMA(res, ylim = c(-5, 5), main="MA plot (w/o LFC shrinkage)")
+```
+
+After LFC shrinkage:
+
+```{r}
+# resultsNames(dds) # see coeffs
+res <- lfcShrink(dds, coef="strain_GF_vs_SPF", type = "normal")
+plotMA(res, ylim = c(-2, 2), main="MA plot (after LFC shrinkage)")
+```
+
+```{r include=FALSE, eval=FALSE}
+hist(
+  res$pvalue[res$baseMean > 1], 
+  breaks=0:20/20, col="grey50", border="white",
+  main = "Distribution of p values", x="p value"
+)
+```
+
+# GAGE
+
+Using DESeq2 DEGs.
+
+```{r}
+resdata <- as.data.table(res)
+#sum(abs(resdata$log2FoldChange)>2&resdata$pvalue<0.01, na.rm=TRUE) # DE genes
+exp_data <- res$log2FoldChange
+names(exp_data) <- data$Name
+```
+
+Need to retrieve gene sets data from KEGG.  
+
+```{r message=FALSE, cache=TRUE}
+kegg.mm <- kegg.gsets(species="mmu")
+```
+
+Next, map genes' ENTREZ IDs to symbols.  
+
+```{r message=FALSE}
+kegg.mm.id <- lapply(kegg.mm$kg.sets, function(x) eg2id(x, category="SYMBOL", org="mouse")[,2])
+all.equal(lapply(kegg.mm$kg.sets,length),lapply(kegg.mm.id,length)) # sanity check
+```
+
+### Run GAGE  
+
+```{r}
+kegg_gage <- gage(
+  exp_data, 
+  gsets=kegg.mm.id,
+  same.dir=FALSE, 
+  ref=NULL, samp=NULL
+)
+```
+
+It is recommanded to set `same.dir=FALSE` for KEGG pathways analysis so as to capture gene sets i.e. pathways perturbed towards both directions simultaneously. These are pathways that are more perturbed than expected (hence the label `greater`).
+
+```{r}
+dim(kegg_gage$greater)
+```
+
+There are `r dim(kegg_gage$greater)[1]` of them.  
+Next, sort and count **signficant** gene sets:  
+
+```{r message=FALSE}
+kegg_sig <- sigGeneSet(kegg_gage)
+dim(kegg_sig$greater)
+```
+
+There are `r dim(kegg_sig$greater)[1]` of those.  
+Extract a **non-redundant significant** gene set list:  
+
+```{r}
+nrlist <- sapply(kegg_sig[1], function(x){
+  if (nrow(x)>1)
+    esset.grp(x, exp_data, kegg.mm.id, same.dir=FALSE)
+  else if (nrow(x)==1)
+    x
+  else NULL
+}, simplify=FALSE, USE.NAMES=TRUE)
+
+length(nrlist$greater$allSets) # signficant gene sets
+length(nrlist$greater$essentialSets) # non-redundant signficant gene set
+nrlist$greater$essentialSets
+```
+
+### Inspect overlap between genes in gene sets 
+
+```{r}
+overlaps <- nrlist$greater$overlapCounts
+labels <- str_extract(nrlist$greater$allSets, "(?<=mmu\\d{5} ).*")
+sizes <- sapply(kegg.mm$kg.sets[nrlist$greater$allSets],length)
+```
+
+There are too many gene sets (`r dim(overlaps)[1]`), graph will be too crowded. Using non-redundant sets instead.  
+
+```{r}
+idx <- nrlist$greater$allSets %in% nrlist$greater$essentialSets
+overlaps <- overlaps[idx,idx]
+labels <- labels[idx]
+sizes <- sizes[idx]
+```
+
+Now onto graphs.  
+
+```{r fig.height=8, fig.width=10}
+set.seed(50)
+#g <- graph_from_adjacency_matrix(overlaps)
+g <- as_tbl_graph(overlaps) %>% mutate(genes=sizes) %>%
+  mutate(cluster = as.factor(group_infomap()))
+ggraph(g, layout = "nicely") +
+  geom_edge_link(alpha=0.2,edge_colour="blue", show.legend=FALSE) +
+  geom_node_point(aes(size=genes,colour=cluster),alpha=0.9,show.legend=TRUE) +
+  geom_node_text(aes(label=labels), repel=TRUE, size=3) + 
+  theme_void() +
+  scale_size(range=c(3,8))
+```
+
+### Extract and visualize the gene expression data for top gene sets  
+
+The following code loops over the groups of resulting gene sets, creating a directory for each group in which the output files will be saved.  
+Since `same.dir=FALSE` there is just one group, labeled `greater`, otherwise there would be both `greater` and `less`, containing upregulated and downregulated gene sets, respectively.  
+The following set of operations is then executed for each non-redundant (i.e. essential) gene set:  
+ * identify essential genes in the set
+ * extract expression data (i.e. LFC values) for those genes
+ * create output files (LFC and pathway maps)  
+
+```{r message=FALSE, warning=FALSE, results='hide'}
+require(pathview)
+exprlist <- lapply(names(nrlist), function(x){
+  
+  # make output dir
+  name <- x
+  x <- nrlist[[name]]
+  wdir <- getwd()
+  outdir <- file.path("output",name)
+  dir.create(outdir)
+  setwd(outdir)
+  
+  # handle empty and matrix input
+  if (!is.null(x)) {
+    if (is.matrix(x)) {
+      gene_sets <- rownames(x)
+      x <- list(stats=x)
+      x$coreGeneSets[[gene_sets]] <- kegg.mm.id[[gene_sets]]
+    } else {
+      gene_sets <- x$essentialSets
+    }
+    
+    exprout <- lapply(gene_sets, function(gs){
+      
+      # gene set identifier
+      gsname <- stringr::str_extract(gs,"mmu\\d+")
+      
+      # essential genes identifiers
+      gsgenes <- x$coreGeneSets[[gs]]
+      gsgenes <- gsgenes[!is.na(gsgenes)]
+      
+      # extract expression data for essential genes
+      if (class(exp_data)=="numeric") 
+        essData <- cbind(essGene(gsgenes, cbind(exp_data)))
+      else
+        essData <- essGene(gsgenes, exp_data)
+      
+      # output and visualize expression data
+      gage::geneData(
+        genes=kegg.mm.id[[gs]], exprs=essData, outname=gsname,
+        txt=TRUE, heatmap=TRUE, scatterplot=TRUE
+      )
+      pathview(
+        gene.data=exp_data, pathway.id=gs, species="mouse", gene.idtype="SYMBOL",
+        kegg.native=TRUE, same.layer=FALSE,
+        low=list(gene="#BC001F"), mid=list(gene="#E5E5E3"), high=list(gene="#0C74EB")
+      )
+      
+      # expression data for ridge plot
+      genes <- rownames(essData)
+      ind <- which(genes %in% data$Name)
+      expdata <- resdata[ind][,gene:=genes]
+      if (nrow(expdata)>0) expdata else NULL
+      
+    })  
+    
+    names(exprout) <- gene_sets
+  }
+  
+  setwd(wdir)
+  exprout
+  
+})
+```
+
+Ridge plot for gene sets:  
+
+```{r fig.height=10, fig.width=8}
+allsets <- unlist(exprlist,recursive=FALSE)
+dt <- rbindlist(allsets, idcol="geneset")
+ggplot(dt, aes(x=log2FoldChange, y=geneset)) + 
+  geom_density_ridges() +
+  geom_vline(xintercept=0, color='firebrick', linetype='dashed') +
+  xlab("LFC") + ylab(NULL) + DOSE::theme_dose()
+```

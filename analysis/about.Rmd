@@ -13,4 +13,4 @@ Samples:
 
 RNA isolated from bladder;  
 pooled pairs of samples;  
-sequencing using Illumina, PE150Q30≥80%, 40M pair reads per sample  
+sequencing using Illumina, PE150Q30$\geq$80%, 40M pair reads per sample  

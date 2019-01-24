@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Differential expression and gene set enrichment analysis</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">germfree-mice-RNA-analysis</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/jdblischak/workflowr">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Differential expression and gene set enrichment analysis</h1>
+
+</div>
+
+
+<p><strong>Last updated:</strong> 2019-01-24</p>
+<strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
+<ul>
+<li>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown is untracked by Git. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20190124)</code> </summary></p>
+<p>The command <code>set.seed(20190124)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/tree/92ac53619dc065892aa8ed94355af2bf5bce8f6e" target="_blank">92ac536</a> </summary></p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+<pre><code>
+Ignored files:
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/de_and_gage_cache/
+    Ignored:    docs/figure/
+
+Untracked files:
+    Untracked:  analysis/de_and_gage.Rmd
+    Untracked:  output/greater/
+
+Unstaged changes:
+    Modified:   analysis/about.Rmd
+
+</code></pre>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+</li>
+</ul>
+<hr />
+<div id="setup" class="section level1">
+<h1>Setup</h1>
+<pre class="r"><code>library(readxl)
+library(stringr)
+library(data.table)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(ggplot2)
+library(ggbiplot)
+library(ggrepel)
+library(ggridges)
+library(ggpubr)
+library(gridExtra)
+library(genefilter)
+library(enrichplot)
+library(ggraph)
+library(igraph)
+library(tidygraph)
+library(pathview)
+library(gage)
+library(AnnotationDbi)
+library(biomaRt)</code></pre>
+<pre class="r"><code>theme_set(theme_pubr(border=TRUE))</code></pre>
+</div>
+<div id="read-data" class="section level1">
+<h1>Read data</h1>
+<pre class="r"><code>input &lt;- file.path(&quot;data&quot;,&quot;GF vs. SPF Gene Expression Analysis.xlsx&quot;)
+data &lt;- read_excel(input, sheet = 1)
+setDT(data)
+head(data)</code></pre>
+<pre><code>    Name Chromosome                         Region         Identifier
+1:  Per2          1 complement(91415982..91459324) ENSMUSG00000055866
+2: Ciart          3 complement(95878503..95882251) ENSMUSG00000038550
+3: Arntl          7           113207465..113314126 ENSMUSG00000055116
+4:   Dbp          7             45705088..45710203 ENSMUSG00000059824
+5:  Per1         11             69095217..69109960 ENSMUSG00000020893
+6:   Tef         15             81802421..81826861 ENSMUSG00000022389
+   GF vs. SPF Max group means GF vs. SPF Fold change
+1:                   7.007493               2.865407
+2:                   2.898961               8.373879
+3:                   6.307116              -4.358286
+4:                  50.122624               4.709842
+5:                  13.567661               3.770736
+6:                  24.818669               2.418834
+   GF vs. SPF           Log fold change GF vs. SPF         P-value
+1:                             1.518740                          0
+2:                             3.065896                          0
+3:                            -2.123761                          0
+4:                             2.235679                          0
+5:                             1.914846                          0
+6:                             1.274312                          0
+   GF vs. SPF FDR p-value GF vs. SPF Bonferroni GF2 Total counts  GF2 RPKM
+1:                      0                     0             1707  6.130629
+2:                      0                     0              269  2.502213
+3:                      0                     0              308  1.756436
+4:                      0                     0             6198 43.552937
+5:                      0                     0             3817 14.256379
+6:                      0                     0             8693 23.245749
+      GF2 TPM    GF2 CPM GF3 Total counts  GF3 RPKM    GF3 TPM    GF3 CPM
+1:  17.070891  39.108243             1869  6.983796  18.255147  45.520768
+2:   6.967476   6.162928              263  2.545297   6.653226   6.405544
+3:   4.890841   7.056437              245  1.453645   3.799726   5.967142
+4: 121.274251 141.999349             7138 52.185892 136.410225 173.850851
+5:  39.697246  87.449421             3218 12.505003  32.687192  78.376581
+6:  64.728374 199.161074             9491 26.405630  69.022446 231.159768
+   GF1 Total counts  GF1 RPKM    GF1 TPM    GF1 CPM SPF1 Total counts
+1:             2346  7.908053  21.027713  49.348972               884
+2:              418  3.649374   9.703777   8.792784                37
+3:              219  1.172184   3.116867   4.606745              1459
+4:             8283 54.629041 145.260001 174.235948              1538
+5:             3977 13.941603  37.071073  83.657656              1015
+6:             9883 24.804627  65.956130 207.892536              4216
+    SPF1 RPKM   SPF1 TPM   SPF1 CPM SPF2 Total counts SPF2 RPKM  SPF2 TPM
+1:  2.8349033  8.1934776 18.1114540               712 2.4947027  7.254274
+2:  0.3073182  0.8882153  0.7580586                43 0.3902184  1.134705
+3:  7.4293606 21.4724428 29.8920944              1192 6.6317052 19.284144
+4:  9.6502081 27.8911674 31.5106520              1341 9.1930989 26.732347
+5:  3.3850694  9.7835752 20.7953912               963 3.5089779 10.203656
+6: 10.0667419 29.0950394 86.3777039              3727 9.7230056 28.273248
+     SPF2 CPM SPF3 Total counts  SPF3 RPKM   SPF3 TPM   SPF3 CPM
+1: 15.9176630               457  1.9162173  4.6595849 12.6792086
+2:  0.9613195                30  0.3257994  0.7922327  0.8323332
+3: 26.6486717               730  4.8602831 11.8185458 20.2534405
+4: 29.9797557              1538 12.6176721 30.6818620 42.6709472
+5: 21.5290863               867  3.7806214  9.1931779 24.0544286
+6: 83.3218116              3401 10.6178729 25.8190346 94.3588371</code></pre>
+<p>Remove genes w/o counts (also tried removing genes with a few counts, e.g. 5, the results are not different from this).</p>
+<pre class="r"><code>count_cols &lt;- grep(&quot;count&quot;,names(data),value=TRUE)
+filtrows &lt;- data[,rowSums(.SD),.SDcols=count_cols]==0
+data &lt;- data[!filtrows]</code></pre>
+<p>Get raw counts in <code>DESeqDataSet</code>.</p>
+<pre class="r"><code>count_cols &lt;- grep(&quot;count&quot;,names(data),value=TRUE)
+count_data &lt;- as.data.frame(data[,..count_cols])
+rownames(count_data) &lt;- data$Identifier
+colnames(count_data) &lt;- stringr::str_extract(count_cols,&quot;(GF|SPF)\\d&quot;)
+col_data &lt;- data.frame(
+  strain=factor(c(rep(&quot;GF&quot;,3),rep(&quot;SPF&quot;,3)), levels=c(&quot;SPF&quot;,&quot;GF&quot;)),
+  sample=factor(colnames(count_data),levels=c(&quot;SPF1&quot;,&quot;SPF2&quot;,&quot;SPF3&quot;,&quot;GF1&quot;,&quot;GF2&quot;,&quot;GF3&quot;))
+)
+dds &lt;- DESeqDataSetFromMatrix(
+  countData = count_data,
+  colData = col_data,
+  design = ~ strain
+)</code></pre>
+<pre><code>converting counts to integer mode</code></pre>
+<pre class="r"><code>dds</code></pre>
+<pre><code>class: DESeqDataSet 
+dim: 23662 6 
+metadata(1): version
+assays(1): counts
+rownames(23662): ENSMUSG00000055866 ENSMUSG00000038550 ...
+  ENSMUSG00000069044 ENSMUSG00000068457
+rowData names(0):
+colnames(6): GF2 GF3 ... SPF2 SPF3
+colData names(2): strain sample</code></pre>
+</div>
+<div id="exploratory-data-analysis" class="section level1">
+<h1>Exploratory data analysis</h1>
+<div id="samples-comparison" class="section level2">
+<h2>Samples comparison</h2>
+<pre class="r"><code>sampleDists &lt;- dist(t(assay(dds)))
+sampleDistMatrix &lt;- as.matrix(sampleDists)
+colors &lt;- colorRampPalette(rev(brewer.pal(9,&quot;Blues&quot;)))(255)
+phs &lt;- pheatmap(
+  sampleDistMatrix,
+  clustering_distance_rows = sampleDists,
+  clustering_distance_cols = sampleDists,
+  col=colors, 
+  main = &quot;Samples distance heatmap\n(based on raw counts)&quot;
+)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="variance-normalization" class="section level2">
+<h2>Variance normalization</h2>
+<pre class="r"><code>rds &lt;- rlog(assay(dds))
+pcards &lt;- prcomp(t(rds), scale=TRUE)
+df &lt;- data.frame(t(rds))
+df$col &lt;- c(rep(&quot;GF&quot;,3),rep(&quot;SPF&quot;,3))
+df$sample &lt;- rownames(df)
+pcas &lt;- data.table(scale(pcards$x[,1:2]), keep.rownames=&quot;sample&quot;)
+pcar &lt;- ggbiplot::ggbiplot(pcards, groups=factor(df$col), var.axes=FALSE) +
+  geom_label_repel(data=pcas, mapping=aes(x=PC1, y=PC2, label=sample)) + 
+  guides(colour=FALSE)
+pcarscree &lt;- ggbiplot::ggscreeplot(pcards) + labs(title=&quot;&quot;, x=&quot;PC&quot;)
+grid.arrange(
+  pcar, pcarscree, 
+  ncol=2, widths=2:1, top=&quot;Samples PCA following variance normalization (rlog)&quot;
+)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="clustering" class="section level2">
+<h2>Clustering</h2>
+<p>Clustering by genes with most variable counts after normalization.</p>
+<p>First, mapping entrez ids to gene names.</p>
+<pre class="r"><code>require(biomaRt)
+mart &lt;- useDataset(&quot;mmusculus_gene_ensembl&quot;, useMart(&quot;ensembl&quot;))
+genes &lt;- getBM(
+  attributes=c(&quot;ensembl_gene_id&quot;,&quot;external_gene_name&quot;,&quot;description&quot;),
+  filters=&quot;ensembl_gene_id&quot;,
+  values=rownames(dds),
+  mart=mart
+)</code></pre>
+<pre class="r"><code>setDT(genes)
+genenames &lt;- cbind.data.frame(ensembl_gene_id=rownames(dds))
+setDT(genenames)[genes,on=&#39;ensembl_gene_id&#39;,external_gene_name:=i.description]</code></pre>
+<p>Top 100 most variable genes on a heatmap.</p>
+<pre class="r"><code>require(genefilter)
+heatmap_function &lt;- function(rds,include=1:ncol(rds)) {
+  topVarGenes &lt;- head(order(rowVars(rds[,include]), decreasing = TRUE), 100)
+  mat &lt;- rds[topVarGenes,include]
+  mat &lt;- mat - rowMeans(mat)
+  rownames(mat) &lt;- stringr::str_extract(genenames$external_gene_name, &quot;[^,\\[\\(]+&quot;)[topVarGenes]
+  phg &lt;- pheatmap(mat,treeheight_col=0,treeheight_row=0,show_rownames=FALSE)
+}
+
+heatmap_function(rds)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" width="384" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>#heatmap_function(rds,1:5)
+#heatmap_function(rds,c(1,2,4,5))</code></pre>
+</div>
+</div>
+<div id="deseq2" class="section level1">
+<h1>DESeq2</h1>
+<p>Without SPF3.</p>
+<pre class="r"><code>excols &lt;- match(c(&quot;SPF3&quot;),colnames(dds))
+dds &lt;- dds[,-excols]
+dds &lt;- DESeq(dds)</code></pre>
+<pre><code>estimating size factors</code></pre>
+<pre><code>estimating dispersions</code></pre>
+<pre><code>gene-wise dispersion estimates</code></pre>
+<pre><code>mean-dispersion relationship</code></pre>
+<pre><code>final dispersion estimates</code></pre>
+<pre><code>fitting model and testing</code></pre>
+<pre class="r"><code>res &lt;- results(dds)</code></pre>
+<div id="compare-deseq2-and-input-lfc" class="section level2">
+<h2>Compare DESeq2 and input LFC</h2>
+<pre class="r"><code>all.equal(data$Identifier, rownames(res)) # sanity check</code></pre>
+<pre><code>[1] TRUE</code></pre>
+<pre class="r"><code>compadt &lt;- data.table(
+  gene=data$Name,
+  input_lfc=data$`GF vs. SPF           Log fold change`,
+  input_pval=data$`GF vs. SPF         P-value`,
+  input_fdr=data$`GF vs. SPF FDR p-value`,
+  DESeq2_lfc=res$log2FoldChange,
+  DESeq2_lfcSE=res$lfcSE,
+  DESeq2_pval=res$pvalue, 
+  DESeq2_padj=res$padj
+)
+outliers &lt;- compadt[abs(input_lfc)&gt;10 | abs(DESeq2_lfc)&gt;10]
+ggplot(compadt[!(is.na(input_lfc)|is.na(DESeq2_lfc)|is.na(DESeq2_lfcSE))], aes(input_lfc, DESeq2_lfc)) + 
+  geom_point(aes(colour=DESeq2_lfcSE), alpha=0.5) + 
+  geom_abline(slope=1,intercept=0) +
+  geom_label_repel(data=outliers, aes(label=gene))</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>data[Name %in% outliers$gene]</code></pre>
+<pre><code>        Name Chromosome                           Region
+1:  Igkv4-68          6   complement(69304834..69305405)
+2:     Mup19          4   complement(61778324..61782269)
+3: Igkv12-89          6   complement(68834846..68835307)
+4:  Ighv11-2         12 complement(114048241..114048812)
+5:  Ighv1-55         12 complement(115208095..115208591)
+6:   Gm26735         13               28943048..28951671
+           Identifier GF vs. SPF Max group means GF vs. SPF Fold change
+1: ENSMUSG00000076549                  4.3921878             159.545071
+2: ENSMUSG00000078673                  0.7247737             294.707579
+3: ENSMUSG00000076534                  4.2049267               8.532920
+4: ENSMUSG00000096108                  2.2941886               2.637506
+5: ENSMUSG00000095589                  1.9501966               7.658198
+6: ENSMUSG00000097461                  1.1648440              -1.612138
+   GF vs. SPF           Log fold change GF vs. SPF         P-value
+1:                            7.3178202               7.200266e-06
+2:                            8.2031404               1.668340e-03
+3:                            3.0930396               1.959523e-02
+4:                            1.3991745               3.062572e-01
+5:                            2.9370050               2.094011e-02
+6:                           -0.6889749               6.521797e-01
+   GF vs. SPF FDR p-value GF vs. SPF Bonferroni GF2 Total counts GF2 RPKM
+1:            0.003847021              0.373161                0 0.000000
+2:            0.262010301              1.000000              110 2.174321
+3:            0.999997418              1.000000                0 0.000000
+4:            0.999997418              1.000000                0 0.000000
+5:            0.999997418              1.000000                0 0.000000
+6:            0.999997418              1.000000                0 0.000000
+    GF2 TPM  GF2 CPM GF3 Total counts GF3 RPKM   GF3 TPM  GF3 CPM
+1: 0.000000 0.000000                0 0.000000  0.000000 0.000000
+2: 6.054451 2.520156                0 0.000000  0.000000 0.000000
+3: 0.000000 0.000000                0 0.000000  0.000000 0.000000
+4: 0.000000 0.000000              145 6.882566 17.990539 3.531574
+5: 0.000000 0.000000                0 0.000000  0.000000 0.000000
+6: 0.000000 0.000000              267 2.205528  5.765094 6.502967
+   GF1 Total counts GF1 RPKM  GF1 TPM  GF1 CPM SPF1 Total counts SPF1 RPKM
+1:              263 13.17656 35.03682 5.532302                 0         0
+2:                0  0.00000  0.00000 0.000000                 0         0
+3:              216 12.61478 33.54302 4.543639                 0         0
+4:                0  0.00000  0.00000 0.000000                 0         0
+5:              123  5.85059 15.55687 2.587350                 0         0
+6:                0  0.00000  0.00000 0.000000                 0         0
+   SPF1 TPM SPF1 CPM SPF2 Total counts SPF2 RPKM SPF2 TPM SPF2 CPM
+1:        0        0                 0         0        0        0
+2:        0        0                 0         0        0        0
+3:        0        0                 0         0        0        0
+4:        0        0                 0         0        0        0
+5:        0        0                 0         0        0        0
+6:        0        0                 0         0        0        0
+   SPF3 Total counts  SPF3 RPKM SPF3 TPM    SPF3 CPM
+1:                 1 0.06232085 0.151543  0.02774444
+2:                 0 0.00000000 0.000000  0.00000000
+3:                19 1.38027785 3.356364  0.52714434
+4:                48 2.55664207 6.216879  1.33173307
+5:                12 0.71000722 1.726495  0.33293327
+6:               377 3.49453191 8.497506 10.45965351</code></pre>
+</div>
+<div id="ma-plots" class="section level2">
+<h2>MA plots</h2>
+<pre class="r"><code>plotMA(res, ylim = c(-5, 5), main=&quot;MA plot (w/o LFC shrinkage)&quot;)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>After LFC shrinkage:</p>
+<pre class="r"><code># resultsNames(dds) # see coeffs
+res &lt;- lfcShrink(dds, coef=&quot;strain_GF_vs_SPF&quot;, type = &quot;normal&quot;)</code></pre>
+<pre><code>using &#39;normal&#39; for LFC shrinkage, the Normal prior from Love et al (2014).
+additional priors are available via the &#39;type&#39; argument, see ?lfcShrink for details</code></pre>
+<pre class="r"><code>plotMA(res, ylim = c(-2, 2), main=&quot;MA plot (after LFC shrinkage)&quot;)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+</div>
+<div id="gage" class="section level1">
+<h1>GAGE</h1>
+<p>Using DESeq2 DEGs.</p>
+<pre class="r"><code>resdata &lt;- as.data.table(res)
+#sum(abs(resdata$log2FoldChange)&gt;2&amp;resdata$pvalue&lt;0.01, na.rm=TRUE) # DE genes
+exp_data &lt;- res$log2FoldChange
+names(exp_data) &lt;- data$Name</code></pre>
+<p>Need to retrieve gene sets data from KEGG.</p>
+<pre class="r"><code>kegg.mm &lt;- kegg.gsets(species=&quot;mmu&quot;)</code></pre>
+<p>Next, map genes’ ENTREZ IDs to symbols.</p>
+<pre class="r"><code>kegg.mm.id &lt;- lapply(kegg.mm$kg.sets, function(x) eg2id(x, category=&quot;SYMBOL&quot;, org=&quot;mouse&quot;)[,2])
+all.equal(lapply(kegg.mm$kg.sets,length),lapply(kegg.mm.id,length)) # sanity check</code></pre>
+<pre><code>[1] TRUE</code></pre>
+<div id="run-gage" class="section level3">
+<h3>Run GAGE</h3>
+<pre class="r"><code>kegg_gage &lt;- gage(
+  exp_data, 
+  gsets=kegg.mm.id,
+  same.dir=FALSE, 
+  ref=NULL, samp=NULL
+)</code></pre>
+<p>It is recommanded to set <code>same.dir=FALSE</code> for KEGG pathways analysis so as to capture gene sets i.e. pathways perturbed towards both directions simultaneously. These are pathways that are more perturbed than expected (hence the label <code>greater</code>).</p>
+<pre class="r"><code>dim(kegg_gage$greater)</code></pre>
+<pre><code>[1] 314   6</code></pre>
+<p>There are 314 of them.<br />
+Next, sort and count <strong>signficant</strong> gene sets:</p>
+<pre class="r"><code>kegg_sig &lt;- sigGeneSet(kegg_gage)</code></pre>
+<pre><code>[1] &quot;gs.data needs to be a matrix-like object!&quot;
+[1] &quot;gs.data needs to be a matrix-like object!&quot;
+[1] &quot;there are 140 signficantly two-direction perturbed gene sets&quot;</code></pre>
+<pre class="r"><code>dim(kegg_sig$greater)</code></pre>
+<pre><code>[1] 140   6</code></pre>
+<p>There are 140 of those.<br />
+Extract a <strong>non-redundant significant</strong> gene set list:</p>
+<pre class="r"><code>nrlist &lt;- sapply(kegg_sig[1], function(x){
+  if (nrow(x)&gt;1)
+    esset.grp(x, exp_data, kegg.mm.id, same.dir=FALSE)
+  else if (nrow(x)==1)
+    x
+  else NULL
+}, simplify=FALSE, USE.NAMES=TRUE)
+
+length(nrlist$greater$allSets) # signficant gene sets</code></pre>
+<pre><code>[1] 65</code></pre>
+<pre class="r"><code>length(nrlist$greater$essentialSets) # non-redundant signficant gene set</code></pre>
+<pre><code>[1] 25</code></pre>
+<pre class="r"><code>nrlist$greater$essentialSets</code></pre>
+<pre><code> [1] &quot;mmu03010 Ribosome&quot;                                  
+ [2] &quot;mmu04151 PI3K-Akt signaling pathway&quot;                
+ [3] &quot;mmu05012 Parkinson&#39;s disease&quot;                       
+ [4] &quot;mmu04974 Protein digestion and absorption&quot;          
+ [5] &quot;mmu04360 Axon guidance&quot;                             
+ [6] &quot;mmu04514 Cell adhesion molecules (CAMs)&quot;            
+ [7] &quot;mmu04710 Circadian rhythm&quot;                          
+ [8] &quot;mmu00100 Steroid biosynthesis&quot;                      
+ [9] &quot;mmu04371 Apelin signaling pathway&quot;                  
+[10] &quot;mmu04144 Endocytosis&quot;                               
+[11] &quot;mmu04666 Fc gamma R-mediated phagocytosis&quot;          
+[12] &quot;mmu04145 Phagosome&quot;                                 
+[13] &quot;mmu01212 Fatty acid metabolism&quot;                     
+[14] &quot;mmu05202 Transcriptional misregulation in cancer&quot;   
+[15] &quot;mmu05230 Central carbon metabolism in cancer&quot;       
+[16] &quot;mmu00900 Terpenoid backbone biosynthesis&quot;           
+[17] &quot;mmu04662 B cell receptor signaling pathway&quot;         
+[18] &quot;mmu04020 Calcium signaling pathway&quot;                 
+[19] &quot;mmu00270 Cysteine and methionine metabolism&quot;        
+[20] &quot;mmu04216 Ferroptosis&quot;                               
+[21] &quot;mmu00280 Valine, leucine and isoleucine degradation&quot;
+[22] &quot;mmu05014 Amyotrophic lateral sclerosis (ALS)&quot;       
+[23] &quot;mmu04520 Adherens junction&quot;                         
+[24] &quot;mmu04146 Peroxisome&quot;                                
+[25] &quot;mmu01200 Carbon metabolism&quot;                         </code></pre>
+</div>
+<div id="inspect-overlap-between-genes-in-gene-sets" class="section level3">
+<h3>Inspect overlap between genes in gene sets</h3>
+<pre class="r"><code>overlaps &lt;- nrlist$greater$overlapCounts
+labels &lt;- str_extract(nrlist$greater$allSets, &quot;(?&lt;=mmu\\d{5} ).*&quot;)
+sizes &lt;- sapply(kegg.mm$kg.sets[nrlist$greater$allSets],length)</code></pre>
+<p>There are too many gene sets (65), graph will be too crowded. Using non-redundant sets instead.</p>
+<pre class="r"><code>idx &lt;- nrlist$greater$allSets %in% nrlist$greater$essentialSets
+overlaps &lt;- overlaps[idx,idx]
+labels &lt;- labels[idx]
+sizes &lt;- sizes[idx]</code></pre>
+<p>Now onto graphs.</p>
+<pre class="r"><code>set.seed(50)
+#g &lt;- graph_from_adjacency_matrix(overlaps)
+g &lt;- as_tbl_graph(overlaps) %&gt;% mutate(genes=sizes) %&gt;%
+  mutate(cluster = as.factor(group_infomap()))
+ggraph(g, layout = &quot;nicely&quot;) +
+  geom_edge_link(alpha=0.2,edge_colour=&quot;blue&quot;, show.legend=FALSE) +
+  geom_node_point(aes(size=genes,colour=cluster),alpha=0.9,show.legend=TRUE) +
+  geom_node_text(aes(label=labels), repel=TRUE, size=3) + 
+  theme_void() +
+  scale_size(range=c(3,8))</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-26-1.png" width="960" style="display: block; margin: auto;" /></p>
+</div>
+<div id="extract-and-visualize-the-gene-expression-data-for-top-gene-sets" class="section level3">
+<h3>Extract and visualize the gene expression data for top gene sets</h3>
+<p>The following code loops over the groups of resulting gene sets, creating a directory for each group in which the output files will be saved.<br />
+Since <code>same.dir=FALSE</code> there is just one group, labeled <code>greater</code>, otherwise there would be both <code>greater</code> and <code>less</code>, containing upregulated and downregulated gene sets, respectively.<br />
+The following set of operations is then executed for each non-redundant (i.e. essential) gene set:<br />
+* identify essential genes in the set * extract expression data (i.e. LFC values) for those genes * create output files (LFC and pathway maps)</p>
+<pre class="r"><code>require(pathview)
+exprlist &lt;- lapply(names(nrlist), function(x){
+  
+  # make output dir
+  name &lt;- x
+  x &lt;- nrlist[[name]]
+  wdir &lt;- getwd()
+  outdir &lt;- file.path(&quot;output&quot;,name)
+  dir.create(outdir)
+  setwd(outdir)
+  
+  # handle empty and matrix input
+  if (!is.null(x)) {
+    if (is.matrix(x)) {
+      gene_sets &lt;- rownames(x)
+      x &lt;- list(stats=x)
+      x$coreGeneSets[[gene_sets]] &lt;- kegg.mm.id[[gene_sets]]
+    } else {
+      gene_sets &lt;- x$essentialSets
+    }
+    
+    exprout &lt;- lapply(gene_sets, function(gs){
+      
+      # gene set identifier
+      gsname &lt;- stringr::str_extract(gs,&quot;mmu\\d+&quot;)
+      
+      # essential genes identifiers
+      gsgenes &lt;- x$coreGeneSets[[gs]]
+      gsgenes &lt;- gsgenes[!is.na(gsgenes)]
+      
+      # extract expression data for essential genes
+      if (class(exp_data)==&quot;numeric&quot;) 
+        essData &lt;- cbind(essGene(gsgenes, cbind(exp_data)))
+      else
+        essData &lt;- essGene(gsgenes, exp_data)
+      
+      # output and visualize expression data
+      gage::geneData(
+        genes=kegg.mm.id[[gs]], exprs=essData, outname=gsname,
+        txt=TRUE, heatmap=TRUE, scatterplot=TRUE
+      )
+      pathview(
+        gene.data=exp_data, pathway.id=gs, species=&quot;mouse&quot;, gene.idtype=&quot;SYMBOL&quot;,
+        kegg.native=TRUE, same.layer=FALSE,
+        low=list(gene=&quot;#BC001F&quot;), mid=list(gene=&quot;#E5E5E3&quot;), high=list(gene=&quot;#0C74EB&quot;)
+      )
+      
+      # expression data for ridge plot
+      genes &lt;- rownames(essData)
+      ind &lt;- which(genes %in% data$Name)
+      expdata &lt;- resdata[ind][,gene:=genes]
+      if (nrow(expdata)&gt;0) expdata else NULL
+      
+    })  
+    
+    names(exprout) &lt;- gene_sets
+  }
+  
+  setwd(wdir)
+  exprout
+  
+})</code></pre>
+<p>Ridge plot for gene sets:</p>
+<pre class="r"><code>allsets &lt;- unlist(exprlist,recursive=FALSE)
+dt &lt;- rbindlist(allsets, idcol=&quot;geneset&quot;)
+ggplot(dt, aes(x=log2FoldChange, y=geneset)) + 
+  geom_density_ridges() +
+  geom_vline(xintercept=0, color=&#39;firebrick&#39;, linetype=&#39;dashed&#39;) +
+  xlab(&quot;LFC&quot;) + ylab(NULL) + DOSE::theme_dose()</code></pre>
+<pre><code>Picking joint bandwidth of 0.357</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-28-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.5.0 (2018-04-23)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 17134)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United Kingdom.1252 
+[2] LC_CTYPE=English_United Kingdom.1252   
+[3] LC_MONETARY=English_United Kingdom.1252
+[4] LC_NUMERIC=C                           
+[5] LC_TIME=English_United Kingdom.1252    
+
+attached base packages:
+ [1] grid      parallel  stats4    stats     graphics  grDevices utils    
+ [8] datasets  methods   base     
+
+other attached packages:
+ [1] bindrcpp_0.2.2              biomaRt_2.38.0             
+ [3] gage_2.32.0                 pathview_1.22.0            
+ [5] org.Hs.eg.db_3.7.0          AnnotationDbi_1.44.0       
+ [7] tidygraph_1.1.0             igraph_1.2.2               
+ [9] ggraph_1.0.2                enrichplot_1.2.0           
+[11] genefilter_1.64.0           gridExtra_2.3              
+[13] ggpubr_0.2                  magrittr_1.5               
+[15] ggridges_0.5.1              ggrepel_0.8.0              
+[17] ggbiplot_0.55               scales_1.0.0               
+[19] plyr_1.8.4                  ggplot2_3.1.0              
+[21] RColorBrewer_1.1-2          pheatmap_1.0.10            
+[23] DESeq2_1.22.1               SummarizedExperiment_1.12.0
+[25] DelayedArray_0.8.0          BiocParallel_1.16.0        
+[27] matrixStats_0.54.0          Biobase_2.42.0             
+[29] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1        
+[31] IRanges_2.16.0              S4Vectors_0.20.1           
+[33] BiocGenerics_0.28.0         data.table_1.11.8          
+[35] stringr_1.3.1               readxl_1.1.0               
+
+loaded via a namespace (and not attached):
+  [1] backports_1.1.2        Hmisc_4.1-1            fastmatch_1.1-0       
+  [4] workflowr_1.1.1        lazyeval_0.2.1         splines_3.5.0         
+  [7] urltools_1.7.1         digest_0.6.18          htmltools_0.3.6       
+ [10] GOSemSim_2.8.0         viridis_0.5.1          GO.db_3.7.0           
+ [13] checkmate_1.8.5        memoise_1.1.0          cluster_2.0.7-1       
+ [16] Biostrings_2.50.1      annotate_1.60.0        R.utils_2.7.0         
+ [19] prettyunits_1.0.2      colorspace_1.3-2       blob_1.1.1            
+ [22] dplyr_0.7.8            crayon_1.3.4           RCurl_1.95-4.11       
+ [25] jsonlite_1.5           org.Mm.eg.db_3.7.0     graph_1.60.0          
+ [28] bindr_0.1.1            survival_2.43-1        glue_1.3.0            
+ [31] gtable_0.2.0           zlibbioc_1.28.0        XVector_0.22.0        
+ [34] UpSetR_1.3.3           Rgraphviz_2.26.0       DOSE_3.8.2            
+ [37] DBI_1.0.0              Rcpp_1.0.0             viridisLite_0.3.0     
+ [40] xtable_1.8-3           progress_1.2.0         htmlTable_1.12        
+ [43] units_0.6-1            gridGraphics_0.3-0     foreign_0.8-71        
+ [46] bit_1.1-14             europepmc_0.3          Formula_1.2-3         
+ [49] htmlwidgets_1.3        httr_1.3.1             fgsea_1.8.0           
+ [52] acepack_1.4.1          pkgconfig_2.0.2        XML_3.98-1.16         
+ [55] R.methodsS3_1.7.1      farver_1.0             nnet_7.3-12           
+ [58] locfit_1.5-9.1         labeling_0.3           ggplotify_0.0.3       
+ [61] tidyselect_0.2.5       rlang_0.3.0.1          reshape2_1.4.3        
+ [64] munsell_0.5.0          cellranger_1.1.0       tools_3.5.0           
+ [67] RSQLite_2.1.1          evaluate_0.12          yaml_2.2.0            
+ [70] knitr_1.20             bit64_0.9-7            purrr_0.2.5           
+ [73] KEGGREST_1.22.0        whisker_0.3-2          R.oo_1.22.0           
+ [76] KEGGgraph_1.42.0       DO.db_2.9              xml2_1.2.0            
+ [79] compiler_3.5.0         rstudioapi_0.8         curl_3.2              
+ [82] png_0.1-7              tibble_1.4.2           tweenr_1.0.1          
+ [85] geneplotter_1.60.0     stringi_1.2.4          lattice_0.20-38       
+ [88] Matrix_1.2-15          pillar_1.3.0           triebeard_0.3.0       
+ [91] cowplot_0.9.3          bitops_1.0-6           qvalue_2.14.1         
+ [94] R6_2.3.0               latticeExtra_0.6-28    MASS_7.3-51.1         
+ [97] assertthat_0.2.0       rprojroot_1.3-2        withr_2.1.2           
+[100] GenomeInfoDbData_1.2.0 hms_0.4.2              rpart_4.1-13          
+[103] tidyr_0.8.2            rmarkdown_1.10.16      rvcheck_0.1.3         
+[106] git2r_0.23.0           ggforce_0.1.3          base64enc_0.1-3       </code></pre>
+</div>
+</div>
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+<hr>
+<p>
+  This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+  analysis was created with
+  <a href="https://github.com/jdblischak/workflowr">workflowr</a> 1.1.1
+</p>
+<hr>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
