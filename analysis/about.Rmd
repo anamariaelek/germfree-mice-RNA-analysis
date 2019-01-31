@@ -5,12 +5,12 @@ output:
     toc: false
 ---
 
-Analysis of differential expression and gene set enrichment in germ-free mice.  
+Analysis of differential expression and pathways enrichment in germ-free mice.  
 
 Samples:  
  6 germ free mice (GF) mice  
- 6 specific- pathogen free (SPF) mice (control)  
+ 6 specific-pathogen free (SPF) mice (control)  
 
 RNA isolated from bladder;  
 pooled pairs of samples;  
-sequencing using Illumina, PE150Q30$\geq$80%, 40M pair reads per sample  
+sequencing using Illumina, PE150Q30 $\geq$ 80%, 40M pair reads per sample.

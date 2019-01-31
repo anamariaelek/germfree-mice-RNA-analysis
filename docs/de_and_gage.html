@@ -387,10 +387,13 @@ div.tocify {
 <li>
   <a href="license.html">License</a>
 </li>
+<li>
+  <a href="de_and_gage.html">Analysis</a>
+</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li>
-  <a href="https://github.com/jdblischak/workflowr">
+  <a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis">
     <span class="fa fa-github"></span>
      
   </a>
@@ -416,7 +419,7 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-01-24</p>
+<p><strong>Last updated:</strong> 2019-01-31</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -440,10 +443,11 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/tree/56c1bc76546e2349454d855c5b37f76e922d402a" target="_blank">56c1bc7</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/tree/ab9df5645a0b52f876189f3a91b63a059cca29a5" target="_blank">ab9df56</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
+    Ignored:    .Rhistory
     Ignored:    .Rproj.user/
     Ignored:    analysis/de_and_gage_cache/
 
@@ -474,6 +478,74 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/analysis/de_and_gage.Rmd" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+<td style="text-align:left;">
+Added same.dir analysis
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/anamariaelek/germfree-mice-RNA-analysis/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/de_and_gage.html" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+<td style="text-align:left;">
+Added same.dir analysis
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/anamariaelek/germfree-mice-RNA-analysis/5b06752fbbfa52e0f1954c1837d1f63a8b87eb5f/docs/de_and_gage.html" target="_blank">5b06752</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-28
+</td>
+<td style="text-align:left;">
+Update site
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/anamariaelek/germfree-mice-RNA-analysis/e219a02b7bf37a9b0eb7a27ad6334191a2151c4d/docs/de_and_gage.html" target="_blank">e219a02</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-24
+</td>
+<td style="text-align:left;">
+publish site
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -535,8 +607,7 @@ library(tidygraph)
 library(pathview)
 library(gage)
 library(AnnotationDbi)
-library(biomaRt)</code></pre>
-<pre class="r"><code>theme_set(theme_pubr(border=TRUE))</code></pre>
+theme_set(theme_pubr(border=TRUE))</code></pre>
 </div>
 <div id="read-data" class="section level1">
 <h1>Read data</h1>
@@ -600,7 +671,7 @@ head(data)</code></pre>
 4: 29.9797557              1538 12.6176721 30.6818620 42.6709472
 5: 21.5290863               867  3.7806214  9.1931779 24.0544286
 6: 83.3218116              3401 10.6178729 25.8190346 94.3588371</code></pre>
-<p>Remove genes w/o counts (also tried removing genes with a few counts, e.g. 5, the results are not different from this).</p>
+<p>Remove genes with 0 (or a small number of) counts across all samples. This filtering step should not affect the power (or the results) of differntial expression testing because the independent filtering is done automatically in <code>Deseq2</code>, but including it should reduce memory usage and speed up the analysis.</p>
 <pre class="r"><code>count_cols &lt;- grep(&quot;count&quot;,names(data),value=TRUE)
 filtrows &lt;- data[,rowSums(.SD),.SDcols=count_cols]==0
 data &lt;- data[!filtrows]</code></pre>
@@ -644,8 +715,8 @@ phs &lt;- pheatmap(
   col=colors, 
   main = &quot;Samples distance heatmap\n(based on raw counts)&quot;
 )</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-6-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-5-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-5-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -663,21 +734,22 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-6-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-5-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
 </tbody>
 </table>
 <p></details></p>
 </div>
-<div id="variance-normalization" class="section level2">
-<h2>Variance normalization</h2>
+<div id="pca" class="section level2">
+<h2>PCA</h2>
+<p>PCA following variance normalization.</p>
 <pre class="r"><code>rds &lt;- rlog(assay(dds))
 pcards &lt;- prcomp(t(rds), scale=TRUE)
 df &lt;- data.frame(t(rds))
@@ -692,7 +764,62 @@ grid.arrange(
   pcar, pcarscree, 
   ncol=2, widths=2:1, top=&quot;Samples PCA following variance normalization (rlog)&quot;
 )</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-7-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-7-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-7-1.png" target="_blank">56c1bc7</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-24
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+</div>
+<div id="clustering" class="section level2">
+<h2>Clustering</h2>
+<p>Clustering by genes with most variable counts after variance normalization.<br />
+Plotting top 100 most variable genes on a heatmap.</p>
+<pre class="r"><code>require(genefilter)
+heatmap_function &lt;- function(rds,include=1:ncol(rds)) {
+  topVarGenes &lt;- head(order(rowVars(rds[,include]), decreasing = TRUE), 100)
+  mat &lt;- rds[topVarGenes,include]
+  mat &lt;- mat - rowMeans(mat)
+  phg &lt;- pheatmap(mat,treeheight_col=0,treeheight_row=0,show_rownames=FALSE)
+}
+heatmap_function(rds)</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" width="384" style="display: block; margin: auto;" /></p>
 <details> <summary><em>Expand here to see past versions of unnamed-chunk-8-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
@@ -711,65 +838,18 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
-</tbody>
-</table>
-<p></details></p>
-</div>
-<div id="clustering" class="section level2">
-<h2>Clustering</h2>
-<p>Clustering by genes with most variable counts after normalization.</p>
-<p>First, mapping entrez ids to gene names.</p>
-<pre class="r"><code>require(biomaRt)
-mart &lt;- useDataset(&quot;mmusculus_gene_ensembl&quot;, useMart(&quot;ensembl&quot;))
-genes &lt;- getBM(
-  attributes=c(&quot;ensembl_gene_id&quot;,&quot;external_gene_name&quot;,&quot;description&quot;),
-  filters=&quot;ensembl_gene_id&quot;,
-  values=rownames(dds),
-  mart=mart
-)</code></pre>
-<pre class="r"><code>setDT(genes)
-genenames &lt;- cbind.data.frame(ensembl_gene_id=rownames(dds))
-setDT(genenames)[genes,on=&#39;ensembl_gene_id&#39;,external_gene_name:=i.description]</code></pre>
-<p>Top 100 most variable genes on a heatmap.</p>
-<pre class="r"><code>require(genefilter)
-heatmap_function &lt;- function(rds,include=1:ncol(rds)) {
-  topVarGenes &lt;- head(order(rowVars(rds[,include]), decreasing = TRUE), 100)
-  mat &lt;- rds[topVarGenes,include]
-  mat &lt;- mat - rowMeans(mat)
-  rownames(mat) &lt;- stringr::str_extract(genenames$external_gene_name, &quot;[^,\\[\\(]+&quot;)[topVarGenes]
-  phg &lt;- pheatmap(mat,treeheight_col=0,treeheight_row=0,show_rownames=FALSE)
-}
-
-heatmap_function(rds)</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" width="384" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-11-1.png:</em></summary>
-<table style="border-collapse:separate; border-spacing:5px;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Version
-</th>
-<th style="text-align:left;">
-Author
-</th>
-<th style="text-align:left;">
-Date
-</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-8-1.png" target="_blank">56c1bc7</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
@@ -787,7 +867,7 @@ Anamaria Elek
 </div>
 <div id="deseq2" class="section level1">
 <h1>DESeq2</h1>
-<p>Without SPF3.</p>
+<p>DE analysis without SPF3 sample.</p>
 <pre class="r"><code>excols &lt;- match(c(&quot;SPF3&quot;),colnames(dds))
 dds &lt;- dds[,-excols]
 dds &lt;- DESeq(dds)</code></pre>
@@ -817,8 +897,8 @@ ggplot(compadt[!(is.na(input_lfc)|is.na(DESeq2_lfc)|is.na(DESeq2_lfcSE))], aes(i
   geom_point(aes(colour=DESeq2_lfcSE), alpha=0.5) + 
   geom_abline(slope=1,intercept=0) +
   geom_label_repel(data=outliers, aes(label=gene))</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-13-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-10-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -836,13 +916,13 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-13-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-10-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
 </tbody>
@@ -909,8 +989,8 @@ Anamaria Elek
 <div id="ma-plots" class="section level2">
 <h2>MA plots</h2>
 <pre class="r"><code>plotMA(res, ylim = c(-5, 5), main=&quot;MA plot (w/o LFC shrinkage)&quot;)</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-14-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-11-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -928,7 +1008,18 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-14-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-11-1.png" target="_blank">56c1bc7</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
@@ -946,8 +1037,8 @@ res &lt;- lfcShrink(dds, coef=&quot;strain_GF_vs_SPF&quot;, type = &quot;normal&
 <pre><code>using &#39;normal&#39; for LFC shrinkage, the Normal prior from Love et al (2014).
 additional priors are available via the &#39;type&#39; argument, see ?lfcShrink for details</code></pre>
 <pre class="r"><code>plotMA(res, ylim = c(-2, 2), main=&quot;MA plot (after LFC shrinkage)&quot;)</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-15-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-12-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -965,13 +1056,13 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-15-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-12-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
 </tbody>
@@ -981,50 +1072,39 @@ Anamaria Elek
 </div>
 <div id="gage" class="section level1">
 <h1>GAGE</h1>
-<p>Using DESeq2 DEGs.</p>
+<p>Using DESeq2 DE genes as input for Generally Applicable Gene-set Enrichment (GAGAE) for pathway analysis.</p>
 <pre class="r"><code>resdata &lt;- as.data.table(res)
-#sum(abs(resdata$log2FoldChange)&gt;2&amp;resdata$pvalue&lt;0.01, na.rm=TRUE) # DE genes
 exp_data &lt;- res$log2FoldChange
 names(exp_data) &lt;- data$Name</code></pre>
-<p>Need to retrieve gene sets data from KEGG.</p>
+<p>Need to retrieve gene sets (i.e. pathways) data from KEGG.</p>
 <pre class="r"><code>kegg.mm &lt;- kegg.gsets(species=&quot;mmu&quot;)</code></pre>
-<p>Next, map genes’ ENTREZ IDs to symbols.</p>
+<p>And map genes’ ENTREZ IDs to symbols.</p>
 <pre class="r"><code>kegg.mm.id &lt;- lapply(kegg.mm$kg.sets, function(x) eg2id(x, category=&quot;SYMBOL&quot;, org=&quot;mouse&quot;)[,2])
 all.equal(lapply(kegg.mm$kg.sets,length),lapply(kegg.mm.id,length)) # sanity check</code></pre>
 <pre><code>[1] TRUE</code></pre>
-<div id="run-gage" class="section level3">
-<h3>Run GAGE</h3>
+<div id="gage-for-all-significantly-perturbed-pathways" class="section level2">
+<h2>GAGE for all significantly perturbed pathways</h2>
 <pre class="r"><code>kegg_gage &lt;- gage(
   exp_data, 
   gsets=kegg.mm.id,
   same.dir=FALSE, 
   ref=NULL, samp=NULL
 )</code></pre>
-<p>It is recommanded to set <code>same.dir=FALSE</code> for KEGG pathways analysis so as to capture gene sets i.e. pathways perturbed towards both directions simultaneously. These are pathways that are more perturbed than expected (hence the label <code>greater</code>).</p>
-<pre class="r"><code>dim(kegg_gage$greater)</code></pre>
-<pre><code>[1] 314   6</code></pre>
-<p>There are 314 of them.<br />
-Next, sort and count <strong>signficant</strong> gene sets:</p>
+<p>It is recommanded to set <code>same.dir=FALSE</code> for KEGG pathways analysis so as to capture gene sets i.e. pathways perturbed towards both directions simultaneously. These are pathways that are more perturbed than expected (hence the label <code>greater</code>) and there are 314 of them.</p>
+<p>Next, sort and count <strong>signficant</strong> gene sets:</p>
 <pre class="r"><code>kegg_sig &lt;- sigGeneSet(kegg_gage)</code></pre>
 <pre><code>[1] &quot;gs.data needs to be a matrix-like object!&quot;
 [1] &quot;gs.data needs to be a matrix-like object!&quot;
-[1] &quot;there are 140 signficantly two-direction perturbed gene sets&quot;</code></pre>
-<pre class="r"><code>dim(kegg_sig$greater)</code></pre>
-<pre><code>[1] 140   6</code></pre>
-<p>There are 140 of those.<br />
-Extract a <strong>non-redundant significant</strong> gene set list:</p>
+[1] &quot;there are 141 signficantly two-direction perturbed gene sets&quot;</code></pre>
+<p>Extract a <strong>non-redundant significant</strong> gene set list:</p>
 <pre class="r"><code>nrlist &lt;- sapply(kegg_sig[1], function(x){
   if (nrow(x)&gt;1)
     esset.grp(x, exp_data, kegg.mm.id, same.dir=FALSE)
   else if (nrow(x)==1)
     x
   else NULL
-}, simplify=FALSE, USE.NAMES=TRUE)
-
-length(nrlist$greater$allSets) # signficant gene sets</code></pre>
-<pre><code>[1] 65</code></pre>
-<pre class="r"><code>length(nrlist$greater$essentialSets) # non-redundant signficant gene set</code></pre>
-<pre><code>[1] 25</code></pre>
+}, simplify=FALSE, USE.NAMES=TRUE)</code></pre>
+<p>There are 65 signficant gene sets and 25 non-redundant signficant gene set. Those are the following:</p>
 <pre class="r"><code>nrlist$greater$essentialSets</code></pre>
 <pre><code> [1] &quot;mmu03010 Ribosome&quot;                                  
  [2] &quot;mmu04151 PI3K-Akt signaling pathway&quot;                
@@ -1051,20 +1131,18 @@ length(nrlist$greater$allSets) # signficant gene sets</code></pre>
 [23] &quot;mmu04520 Adherens junction&quot;                         
 [24] &quot;mmu04146 Peroxisome&quot;                                
 [25] &quot;mmu01200 Carbon metabolism&quot;                         </code></pre>
-</div>
-<div id="inspect-overlap-between-genes-in-gene-sets" class="section level3">
-<h3>Inspect overlap between genes in gene sets</h3>
+<div id="inspect-overlap-between-genes-in-gene-sets" class="section level4">
+<h4>Inspect overlap between genes in gene sets</h4>
 <pre class="r"><code>overlaps &lt;- nrlist$greater$overlapCounts
 labels &lt;- str_extract(nrlist$greater$allSets, &quot;(?&lt;=mmu\\d{5} ).*&quot;)
 sizes &lt;- sapply(kegg.mm$kg.sets[nrlist$greater$allSets],length)</code></pre>
-<p>There are too many gene sets (65), graph will be too crowded. Using non-redundant sets instead.</p>
+<p>There are too many significant gene sets (65), graph will be too crowded. Using non-redundant significant sets instead.</p>
 <pre class="r"><code>idx &lt;- nrlist$greater$allSets %in% nrlist$greater$essentialSets
 overlaps &lt;- overlaps[idx,idx]
 labels &lt;- labels[idx]
 sizes &lt;- sizes[idx]</code></pre>
 <p>Now onto graphs.</p>
 <pre class="r"><code>set.seed(50)
-#g &lt;- graph_from_adjacency_matrix(overlaps)
 g &lt;- as_tbl_graph(overlaps) %&gt;% mutate(genes=sizes) %&gt;%
   mutate(cluster = as.factor(group_infomap()))
 ggraph(g, layout = &quot;nicely&quot;) +
@@ -1073,8 +1151,8 @@ ggraph(g, layout = &quot;nicely&quot;) +
   geom_node_text(aes(label=labels), repel=TRUE, size=3) + 
   theme_void() +
   scale_size(range=c(3,8))</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-26-1.png" width="960" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-26-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-23-1.png" width="960" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-23-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -1092,21 +1170,21 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-26-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-23-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
 </tbody>
 </table>
 <p></details></p>
 </div>
-<div id="extract-and-visualize-the-gene-expression-data-for-top-gene-sets" class="section level3">
-<h3>Extract and visualize the gene expression data for top gene sets</h3>
+<div id="extract-and-visualize-the-gene-expression-data-for-top-gene-sets" class="section level4">
+<h4>Extract and visualize the gene expression data for top gene sets</h4>
 <p>The following code loops over the groups of resulting gene sets, creating a directory for each group in which the output files will be saved.<br />
 Since <code>same.dir=FALSE</code> there is just one group, labeled <code>greater</code>, otherwise there would be both <code>greater</code> and <code>less</code>, containing upregulated and downregulated gene sets, respectively.<br />
 The following set of operations is then executed for each non-redundant (i.e. essential) gene set:<br />
@@ -1115,8 +1193,8 @@ The following set of operations is then executed for each non-redundant (i.e. e
 exprlist &lt;- lapply(names(nrlist), function(x){
   
   # make output dir
-  name &lt;- x
-  x &lt;- nrlist[[name]]
+  name &lt;- &quot;perturbed&quot;
+  x &lt;- nrlist[[x]]
   wdir &lt;- getwd()
   outdir &lt;- file.path(&quot;output&quot;,name)
   dir.create(outdir)
@@ -1181,8 +1259,8 @@ ggplot(dt, aes(x=log2FoldChange, y=geneset)) +
   geom_vline(xintercept=0, color=&#39;firebrick&#39;, linetype=&#39;dashed&#39;) +
   xlab(&quot;LFC&quot;) + ylab(NULL) + DOSE::theme_dose()</code></pre>
 <pre><code>Picking joint bandwidth of 0.357</code></pre>
-<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-28-1.png" width="768" style="display: block; margin: auto;" /></p>
-<details> <summary><em>Expand here to see past versions of unnamed-chunk-28-1.png:</em></summary>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-25-1.png" width="768" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-25-1.png:</em></summary>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
 <tr>
@@ -1200,18 +1278,317 @@ Date
 <tbody>
 <tr>
 <td style="text-align:left;">
-<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/56c1bc76546e2349454d855c5b37f76e922d402a/docs/figure/de_and_gage.Rmd/unnamed-chunk-28-1.png" target="_blank">56c1bc7</a>
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-25-1.png" target="_blank">ab9df56</a>
 </td>
 <td style="text-align:left;">
 Anamaria Elek
 </td>
 <td style="text-align:left;">
-2019-01-24
+2019-01-31
 </td>
 </tr>
 </tbody>
 </table>
 <p></details></p>
+</div>
+</div>
+<div id="gage-for-significantly-up--or-down-regulated-pathways" class="section level2">
+<h2>GAGE for significantly up- or down-regulated pathways</h2>
+<pre class="r"><code>require(gage)
+kegg_gage &lt;- gage(
+  exp_data, 
+  gsets=kegg.mm.id,
+  same.dir=TRUE, 
+  ref=NULL, samp=NULL
+)</code></pre>
+<p>When <code>same.dir=TRUE</code>, 314 pathways are found to be upregulated, and 314 are downregulated.<br />
+Sort and count <strong>signficant</strong> gene sets:</p>
+<pre class="r"><code>kegg_sig &lt;- sigGeneSet(kegg_gage)</code></pre>
+<pre><code>[1] &quot;gs.data needs to be a matrix-like object!&quot;
+[1] &quot;gs.data needs to be a matrix-like object!&quot;
+[1] &quot;gs.data needs to be a matrix-like object!&quot;
+[1] &quot;there are 39 signficantly up-regulated gene sets&quot;
+[1] &quot;there are 12 signficantly down-regulated gene sets&quot;</code></pre>
+<p>Extract a <strong>non-redundant significant</strong> gene set list:</p>
+<pre class="r"><code>nrlist &lt;- sapply(kegg_sig[1:2], function(x){
+  if (nrow(x)&gt;1)
+    esset.grp(x, exp_data, kegg.mm.id, same.dir=FALSE)
+  else if (nrow(x)==1)
+    x
+  else NULL
+}, simplify=FALSE, USE.NAMES=TRUE)</code></pre>
+<p>There are 36 signficantly upregulated gene sets and 12 signficantly downregulated gene sets.<br />
+Among those, 25 are non-redundant signficant upregulated gene set.</p>
+<pre class="r"><code>nrlist$greater$essentialSets</code></pre>
+<pre><code> [1] &quot;mmu03010 Ribosome&quot;                                  
+ [2] &quot;mmu00190 Oxidative phosphorylation&quot;                 
+ [3] &quot;mmu03050 Proteasome&quot;                                
+ [4] &quot;mmu04146 Peroxisome&quot;                                
+ [5] &quot;mmu01200 Carbon metabolism&quot;                         
+ [6] &quot;mmu03013 RNA transport&quot;                             
+ [7] &quot;mmu00270 Cysteine and methionine metabolism&quot;        
+ [8] &quot;mmu00900 Terpenoid backbone biosynthesis&quot;           
+ [9] &quot;mmu00100 Steroid biosynthesis&quot;                      
+[10] &quot;mmu01212 Fatty acid metabolism&quot;                     
+[11] &quot;mmu00020 Citrate cycle (TCA cycle)&quot;                 
+[12] &quot;mmu04530 Tight junction&quot;                            
+[13] &quot;mmu04144 Endocytosis&quot;                               
+[14] &quot;mmu00620 Pyruvate metabolism&quot;                       
+[15] &quot;mmu05014 Amyotrophic lateral sclerosis (ALS)&quot;       
+[16] &quot;mmu00280 Valine, leucine and isoleucine degradation&quot;
+[17] &quot;mmu04721 Synaptic vesicle cycle&quot;                    
+[18] &quot;mmu03008 Ribosome biogenesis in eukaryotes&quot;         
+[19] &quot;mmu04216 Ferroptosis&quot;                               
+[20] &quot;mmu04722 Neurotrophin signaling pathway&quot;            
+[21] &quot;mmu03040 Spliceosome&quot;                               
+[22] &quot;mmu00240 Pyrimidine metabolism&quot;                     
+[23] &quot;mmu00770 Pantothenate and CoA biosynthesis&quot;         
+[24] &quot;mmu04964 Proximal tubule bicarbonate reclamation&quot;   
+[25] &quot;mmu00480 Glutathione metabolism&quot;                    </code></pre>
+<p>And 5 are non-redundant signficant downregulated gene set.</p>
+<pre class="r"><code>nrlist$less$essentialSets</code></pre>
+<pre><code>[1] &quot;mmu04512 ECM-receptor interaction&quot;              
+[2] &quot;mmu04060 Cytokine-cytokine receptor interaction&quot;
+[3] &quot;mmu05150 Staphylococcus aureus infection&quot;       
+[4] &quot;mmu04640 Hematopoietic cell lineage&quot;            
+[5] &quot;mmu04974 Protein digestion and absorption&quot;      </code></pre>
+<div id="inspect-overlap-between-genes-in-gene-sets-1" class="section level4">
+<h4>Inspect overlap between genes in gene sets</h4>
+<pre class="r"><code>g &lt;- lapply(c(&quot;greater&quot;,&quot;less&quot;), function(x){
+  overlaps &lt;- nrlist[[x]]$overlapCounts
+  labels &lt;- str_extract(nrlist[[x]]$allSets, &quot;(?&lt;=mmu\\d{5} ).*&quot;)
+  sizes &lt;- sapply(kegg.mm$kg.sets[nrlist[[x]]$allSets],length)
+  # using non-redundant sets
+  idx &lt;- nrlist[[x]]$allSets %in% nrlist[[x]]$essentialSets
+  overlaps &lt;- overlaps[idx,idx]
+  labels &lt;- labels[idx]
+  sizes &lt;- sizes[idx]
+  # graph
+  g &lt;- as_tbl_graph(overlaps) %&gt;% 
+    mutate(genes=sizes) %&gt;% 
+    mutate(cluster=as.factor(group_infomap()))
+  # plot
+  ggraph(g, layout = &quot;nicely&quot;) +
+    geom_edge_link(alpha=0.2,edge_colour=&quot;blue&quot;, show.legend=FALSE) +
+    geom_node_point(aes(size=genes,colour=cluster),alpha=0.9) +
+    geom_node_text(aes(label=labels), repel=TRUE, size=2.5) + 
+    theme_void() + scale_colour_discrete(guide=FALSE) +
+    scale_size(range=c(3,8))
+})</code></pre>
+<p>Genes in up-regulated pathways:</p>
+<pre class="r"><code>g[[1]]</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-32-1.png" width="960" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-32-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-32-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+<p>Genes in down-regulated pathways:</p>
+<pre class="r"><code>g[[2]]</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-33-1.png" width="960" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-33-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-33-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+</div>
+<div id="extract-and-visualize-the-gene-expression-data-for-top-gene-sets-1" class="section level4">
+<h4>Extract and visualize the gene expression data for top gene sets</h4>
+<p>The following code loops over the groups of resulting gene sets, creating a directory for each group in which the output files will be saved.<br />
+Since <code>same.dir=TRUE</code> there are be both <code>greater</code> and <code>less</code> groups, containing upregulated and downregulated gene sets, respectively.<br />
+The following set of operations is then executed for each non-redundant (i.e. essential) gene set:</p>
+<ul>
+<li>identify essential genes in the set<br />
+</li>
+<li>extract expression data (i.e. LFC values) for those genes<br />
+</li>
+<li>create output files (LFC and pathway maps)</li>
+</ul>
+<pre class="r"><code>require(pathview)
+exprlist &lt;- lapply(names(nrlist), function(x){
+  
+  # make output dir
+  name &lt;- x
+  x &lt;- nrlist[[x]]
+  wdir &lt;- getwd()
+  outdir &lt;- file.path(&quot;output&quot;,name)
+  dir.create(outdir)
+  setwd(outdir)
+  
+  # handle empty and matrix input
+  if (!is.null(x)) {
+    if (is.matrix(x)) {
+      gene_sets &lt;- rownames(x)
+      x &lt;- list(stats=x)
+      x$coreGeneSets[[gene_sets]] &lt;- kegg.mm.id[[gene_sets]]
+    } else {
+      gene_sets &lt;- x$essentialSets
+    }
+    
+    exprout &lt;- lapply(gene_sets, function(gs){
+      # gene set identifier
+      gsname &lt;- stringr::str_extract(gs,&quot;mmu\\d+&quot;)
+      # essential genes identifiers
+      gsgenes &lt;- x$coreGeneSets[[gs]]
+      gsgenes &lt;- gsgenes[!is.na(gsgenes)]
+      # extract expression data for essential genes
+      if (class(exp_data)==&quot;numeric&quot;) 
+        essData &lt;- cbind(essGene(gsgenes, cbind(exp_data)))
+      else
+        essData &lt;- essGene(gsgenes, exp_data)
+      
+      # output and visualize expression data
+      gage::geneData(
+        genes=kegg.mm.id[[gs]], exprs=essData, outname=gsname,
+        txt=TRUE, heatmap=TRUE, scatterplot=TRUE
+      )
+      pathview(
+        gene.data=exp_data, pathway.id=gs, species=&quot;mouse&quot;, gene.idtype=&quot;SYMBOL&quot;,
+        kegg.native=TRUE, same.layer=FALSE,
+        low=list(gene=&quot;#BC001F&quot;), mid=list(gene=&quot;#E5E5E3&quot;), high=list(gene=&quot;#0C74EB&quot;)
+      )
+      
+      # expression data for ridge plot
+      genes &lt;- rownames(essData)
+      ind &lt;- which(genes %in% data$Name)
+      expdata &lt;- resdata[ind][,gene:=genes]
+      if (nrow(expdata)&gt;0) expdata else NULL
+      
+    })  
+    
+    names(exprout) &lt;- gene_sets
+  }
+  
+  setwd(wdir)
+  exprout
+  
+})</code></pre>
+<p>Make ridge plots for gene sets.</p>
+<pre class="r"><code>r &lt;- lapply(1:2, function(x){
+  allsets &lt;- exprlist[[x]]
+  dt &lt;- rbindlist(allsets, idcol=&quot;geneset&quot;)
+  ggplot(dt, aes(x=log2FoldChange, y=geneset)) + 
+    geom_density_ridges() +
+    geom_vline(xintercept=0, color=&#39;firebrick&#39;, linetype=&#39;dashed&#39;) +
+    xlab(&quot;LFC&quot;) + ylab(NULL) + DOSE::theme_dose()
+})</code></pre>
+<p>Up-regulated::</p>
+<pre class="r"><code>r[[1]]</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-36-1.png" width="768" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-36-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-36-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+<p>Down-regulated:</p>
+<pre class="r"><code>r[[2]]</code></pre>
+<p><img src="figure/de_and_gage.Rmd/unnamed-chunk-37-1.png" width="768" style="display: block; margin: auto;" /></p>
+<details> <summary><em>Expand here to see past versions of unnamed-chunk-37-1.png:</em></summary>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+<a href="https://github.com/anamariaelek/germfree-mice-RNA-analysis/blob/ab9df5645a0b52f876189f3a91b63a059cca29a5/docs/figure/de_and_gage.Rmd/unnamed-chunk-37-1.png" target="_blank">ab9df56</a>
+</td>
+<td style="text-align:left;">
+Anamaria Elek
+</td>
+<td style="text-align:left;">
+2019-01-31
+</td>
+</tr>
+</tbody>
+</table>
+<p></details></p>
+</div>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
@@ -1234,24 +1611,24 @@ attached base packages:
  [8] datasets  methods   base     
 
 other attached packages:
- [1] bindrcpp_0.2.2              biomaRt_2.38.0             
- [3] gage_2.32.0                 pathview_1.22.0            
- [5] org.Hs.eg.db_3.7.0          AnnotationDbi_1.44.0       
- [7] tidygraph_1.1.0             igraph_1.2.2               
- [9] ggraph_1.0.2                enrichplot_1.2.0           
-[11] genefilter_1.64.0           gridExtra_2.3              
-[13] ggpubr_0.2                  magrittr_1.5               
-[15] ggridges_0.5.1              ggrepel_0.8.0              
-[17] ggbiplot_0.55               scales_1.0.0               
-[19] plyr_1.8.4                  ggplot2_3.1.0              
-[21] RColorBrewer_1.1-2          pheatmap_1.0.10            
-[23] DESeq2_1.22.1               SummarizedExperiment_1.12.0
-[25] DelayedArray_0.8.0          BiocParallel_1.16.0        
-[27] matrixStats_0.54.0          Biobase_2.42.0             
-[29] GenomicRanges_1.34.0        GenomeInfoDb_1.18.1        
-[31] IRanges_2.16.0              S4Vectors_0.20.1           
-[33] BiocGenerics_0.28.0         data.table_1.11.8          
-[35] stringr_1.3.1               readxl_1.1.0               
+ [1] bindrcpp_0.2.2              gage_2.32.0                
+ [3] pathview_1.22.0             org.Hs.eg.db_3.7.0         
+ [5] AnnotationDbi_1.44.0        tidygraph_1.1.0            
+ [7] igraph_1.2.2                ggraph_1.0.2               
+ [9] enrichplot_1.2.0            genefilter_1.64.0          
+[11] gridExtra_2.3               ggpubr_0.2                 
+[13] magrittr_1.5                ggridges_0.5.1             
+[15] ggrepel_0.8.0               ggbiplot_0.55              
+[17] scales_1.0.0                plyr_1.8.4                 
+[19] ggplot2_3.1.0               RColorBrewer_1.1-2         
+[21] pheatmap_1.0.10             DESeq2_1.22.1              
+[23] SummarizedExperiment_1.12.0 DelayedArray_0.8.0         
+[25] BiocParallel_1.16.0         matrixStats_0.54.0         
+[27] Biobase_2.42.0              GenomicRanges_1.34.0       
+[29] GenomeInfoDb_1.18.1         IRanges_2.16.0             
+[31] S4Vectors_0.20.1            BiocGenerics_0.28.0        
+[33] data.table_1.11.8           stringr_1.3.1              
+[35] readxl_1.1.0               
 
 loaded via a namespace (and not attached):
   [1] backports_1.1.2        Hmisc_4.1-1            fastmatch_1.1-0       
@@ -1280,16 +1657,16 @@ loaded via a namespace (and not attached):
  [70] knitr_1.20             bit64_0.9-7            purrr_0.2.5           
  [73] KEGGREST_1.22.0        whisker_0.3-2          R.oo_1.22.0           
  [76] KEGGgraph_1.42.0       DO.db_2.9              xml2_1.2.0            
- [79] compiler_3.5.0         rstudioapi_0.8         curl_3.2              
- [82] png_0.1-7              tibble_1.4.2           tweenr_1.0.1          
- [85] geneplotter_1.60.0     stringi_1.2.4          lattice_0.20-38       
- [88] Matrix_1.2-15          pillar_1.3.0           triebeard_0.3.0       
- [91] cowplot_0.9.3          bitops_1.0-6           qvalue_2.14.1         
- [94] R6_2.3.0               latticeExtra_0.6-28    MASS_7.3-51.1         
- [97] assertthat_0.2.0       rprojroot_1.3-2        withr_2.1.2           
-[100] GenomeInfoDbData_1.2.0 hms_0.4.2              rpart_4.1-13          
-[103] tidyr_0.8.2            rmarkdown_1.10.16      rvcheck_0.1.3         
-[106] git2r_0.23.0           ggforce_0.1.3          base64enc_0.1-3       </code></pre>
+ [79] compiler_3.5.0         rstudioapi_0.8         png_0.1-7             
+ [82] tibble_1.4.2           tweenr_1.0.1           geneplotter_1.60.0    
+ [85] stringi_1.2.4          lattice_0.20-38        Matrix_1.2-15         
+ [88] pillar_1.3.0           triebeard_0.3.0        cowplot_0.9.3         
+ [91] bitops_1.0-6           qvalue_2.14.1          R6_2.3.0              
+ [94] latticeExtra_0.6-28    MASS_7.3-51.1          assertthat_0.2.0      
+ [97] rprojroot_1.3-2        withr_2.1.2            GenomeInfoDbData_1.2.0
+[100] hms_0.4.2              rpart_4.1-13           tidyr_0.8.2           
+[103] rmarkdown_1.10.16      rvcheck_0.1.3          git2r_0.23.0          
+[106] ggforce_0.1.3          base64enc_0.1-3       </code></pre>
 </div>
 </div>
 

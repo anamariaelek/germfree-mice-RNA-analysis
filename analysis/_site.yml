@@ -9,9 +9,11 @@ navbar:
       href: about.html
     - text: "License"
       href: license.html
+    - text: "Analysis"
+      href: de_and_gage.html
   right:
     - icon: fa-github
-      href: https://github.com/jdblischak/workflowr
+      href: https://github.com/anamariaelek/germfree-mice-RNA-analysis
 output:
   workflowr::wflow_html:
     toc: true
